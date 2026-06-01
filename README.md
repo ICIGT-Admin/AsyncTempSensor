@@ -1,65 +1,110 @@
-# AsyncTempSensor — Arduino-библиотека для DS18B20
+```markdown
+# AsyncTempSensor — Arduino library for DS18B20
 
-Arduino-библиотека для **неблокирующей асинхронной работы** с температурными датчиками **DS18B20**.
+Arduino library for **non-blocking asynchronous operation** with **DS18B20** temperature sensors.
+
 ![AsyncTempSensor](https://github.com/MouseZver/AsyncTempSensor/blob/master/sensors.png?raw=true)
 
-## ✅ Возможности
+## ✅ Features
 
-- Работа с **одним или несколькими датчиками** на одном пине
-- **Неблокирующий** режим через `millis()`
-- Поддержка **callback-уведомлений** при готовности температуры
-- Полностью **без использования `delay()`**
-- Возможность включения **отладочного вывода**
-- Простой и понятный интерфейс
+- Works with **one or multiple sensors** on a single pin
+- **Non-blocking** mode using `millis()`
+- Supports **callback notifications** when temperature is ready
+- Completely **`delay()`-free**
+- Optional **debug output**
+- Simple and intuitive interface
 
-## 📌 Пример использования
+## 📌 Usage Example
 
-### Базовый пример:
+### Basic example:
 
 ```cpp
 #include <AsyncTempSensor.h>
 
-AsyncTempSensor tempSensor(2, [](int index, float temp) {
-    Serial.print("🌡 Температура от датчика ");
-    Serial.print(index);
-    Serial.print(": ");
+// Callback receives device address and temperature
+void onTemperature(DeviceAddress address, float temp) {
+    Serial.print("🌡 Temperature from sensor: ");
+    
+    // Print the 64-bit address
+    for (int i = 0; i < 8; i++) {
+        if (address[i] < 16) Serial.print("0");
+        Serial.print(address[i], HEX);
+        if (i < 7) Serial.print(":");
+    }
+    
+    Serial.print(" = ");
     Serial.println(temp);
-});
+}
+
+AsyncTempSensor tempSensor(2, onTemperature);
 
 void setup() {
     Serial.begin(9600);
-	tempSensor.setDebugOutput(true); // Включить отладку
+    tempSensor.setDebugOutput(true); // Enable debug output
     tempSensor.begin();
 }
 
 void loop() {
-    tempSensor.update(1000); // Обновление каждые 1 секунду
+    tempSensor.update(1000); // Update every 1 second
 }
 ```
 
-## 📦 Установка
+### Alternative: Lambda callback (C++11)
 
-1. Перейди в **Sketch → Подключить библиотеку → Управлять библиотеками**
-2. Найди **AsyncTempSensor**
-3. Установи библиотеку
+```cpp
+AsyncTempSensor tempSensor(2, [](DeviceAddress address, float temp) {
+    Serial.print("Temperature: ");
+    Serial.println(temp);
+});
+```
 
-Или вручную склонируй репозиторий в папку твоих библиотек:
+## 📦 Installation
+
+1. Go to **Sketch → Include Library → Manage Libraries**
+2. Search for **AsyncTempSensor**
+3. Install the library
+
+Or manually clone the repository into your libraries folder:
 
 ```bash
 cd ~/Arduino/libraries
 git clone https://github.com/yourusername/AsyncTempSensor.git
 ```
 
-## 📌 Функции
+## 📌 Functions
 
-- `begin()` — инициализация и поиск датчиков
-- `update(unsigned long interval)` — обновление температуры с заданным интервалом
-- `setDebugOutput(true)` — включить отладочный вывод в Serial
-- `callback` - вызывается при готовности температуры
+- `begin()` — initialize and search for sensors
+- `update(unsigned long interval)` — update temperature at specified interval
+- `setDebugOutput(true)` — enable debug output to Serial
+- `callback` — called when temperature is ready (receives `DeviceAddress` and `float temperature`)
 
-## 📌 Подключение датчика
+## 📌 Sensor Wiring
 
-- **DATA датчика** → **пин 2** (или любой другой, указанный при инициализации)
+- **Sensor DATA** → **pin 2** (or any other pin specified during initialization)
 - **GND** → **GND**
 - **VCC** → **5V**
-- **Резистор 4.7 кОм** между **DATA и 5V**
+- **4.7kΩ resistor** between **DATA and 5V**
+
+## 📌 DeviceAddress Format
+
+The `DeviceAddress` is an 8-byte array containing the unique 64-bit ROM code of each DS18B20 sensor. You can store, compare, or print these addresses to identify specific sensors.
+
+Example of printing an address:
+
+```cpp
+void printAddress(DeviceAddress address) {
+    for (int i = 0; i < 8; i++) {
+        if (address[i] < 16) Serial.print("0");
+        Serial.print(address[i], HEX);
+        if (i < 7) Serial.print(":");
+    }
+}
+```
+
+## 📌 Notes
+
+- The library automatically searches for all DS18B20 sensors on the bus during `begin()`
+- The callback is called for each sensor once per update cycle when measurements are complete
+- Minimum conversion time is 750ms (DS18B20 default 12-bit resolution)
+- If no sensors are found, the callback is called once with an empty address and `NAN` (Not a Number)
+```

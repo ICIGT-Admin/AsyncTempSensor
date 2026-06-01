@@ -4,18 +4,21 @@ AsyncTempSensor::AsyncTempSensor(uint8_t pin, TempCallback callback)
     : _oneWire(pin), _pin(pin), _callback(callback) {}
 
 void AsyncTempSensor::begin() {
-    if (_debug) Serial.println("AsyncTempSensor: Начинаем инициализацию...");
+    if (_debug) Serial.println("AsyncTempSensor: Starting initialization...");
 
     findDevices();
 
     if (_deviceCount == 0) {
-        if (_debug) Serial.println("AsyncTempSensor: Нет датчиков");
-        if (_callback) _callback(-1, NAN);
+        if (_debug) Serial.println("AsyncTempSensor: No sensors found");
+        if (_callback) {
+            DeviceAddress emptyAddress = {0};
+            _callback(emptyAddress, NAN);
+        }
     } else {
         if (_debug) {
-            Serial.print("AsyncTempSensor: Найдено ");
+            Serial.print("AsyncTempSensor: Found ");
             Serial.print(_deviceCount);
-            Serial.println(" датчиков");
+            Serial.println(" sensors");
         }
         startConversion();
     }
@@ -29,7 +32,7 @@ void AsyncTempSensor::update(unsigned long interval) {
             for (int i = 0; i < _deviceCount; i++) {
                 _oneWire.reset();
                 _oneWire.select(_addresses[i]);
-                _oneWire.write(0xBE); // Чтение Scratchpad
+                _oneWire.write(0xBE); // Read Scratchpad
 
                 uint8_t data[9];
                 for (int j = 0; j < 9; j++) {
@@ -40,7 +43,7 @@ void AsyncTempSensor::update(unsigned long interval) {
                 float temperature = raw / 16.0;
 
                 if (_callback) {
-                    _callback(i, temperature);
+                    _callback(_addresses[i], temperature);
                 }
             }
             _conversionStarted = false;
@@ -64,7 +67,7 @@ void AsyncTempSensor::findDevices() {
     uint8_t address[8];
     while (_oneWire.search(address)) {
         if (OneWire::crc8(address, 7) == address[7]) {
-            if (address[0] == 0x28) { // Проверка на DS18B20
+            if (address[0] == 0x28) { // Check for DS18B20
                 for (int i = 0; i < 8; i++) {
                     _addresses[_deviceCount][i] = address[i];
                 }
@@ -79,10 +82,10 @@ void AsyncTempSensor::startConversion() {
 
     _oneWire.reset();
     _oneWire.skip();
-    _oneWire.write(0x44, 1); // Запуск измерения температуры
+    _oneWire.write(0x44, 1); // Start temperature measurement
 
     _lastConversionTime = millis();
     _conversionStarted = true;
 
-    if (_debug) Serial.println("AsyncTempSensor: Запущено измерение");
+    if (_debug) Serial.println("AsyncTempSensor: Measurement started");
 }

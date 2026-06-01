@@ -4,26 +4,26 @@
 #include <Arduino.h>
 #include <OneWire.h>
 
-// Тип для хранения 64-битного адреса датчика
+// Type for storing 64-bit sensor address
 typedef uint8_t DeviceAddress[8];
 
-// Тип функции обратного вызова
-typedef void (*TempCallback)(int index, float temp);
+// Callback function type - now receives address instead of index
+typedef void (*TempCallback)(DeviceAddress address, float temp);
 
 class AsyncTempSensor {
 public:
     static const int MAX_DEVICES = 8;
 
-    // Конструктор: указываем пин и callback
+    // Constructor: specify pin and callback
     AsyncTempSensor(uint8_t pin, TempCallback callback = nullptr);
 
-    // Инициализация: поиск датчиков
+    // Initialization: search for sensors
     void begin();
 
-    // Обновление температуры (неблокирующий вызов)
+    // Update temperature (non-blocking call)
     void update(unsigned long interval);
 
-    // Включить/выключить вывод отладочной информации
+    // Enable/disable debug output
     void setDebugOutput(bool enabled);
 
 private:
@@ -31,15 +31,15 @@ private:
     uint8_t _pin;
     TempCallback _callback = nullptr;
 
-    DeviceAddress _addresses[MAX_DEVICES]; // Адреса найденных датчиков
-    int _deviceCount = 0;                  // Количество найденных датчиков
+    DeviceAddress _addresses[MAX_DEVICES]; // Addresses of found sensors
+    int _deviceCount = 0;                  // Number of found sensors
 
-    unsigned long _lastConversionTime = 0; // Время последнего запуска измерения
-    bool _conversionStarted = false;       // Флаг: идёт ли измерение
-    bool _debug = false;                   // Флаг: включён ли дебаг
+    unsigned long _lastConversionTime = 0; // Time of last measurement start
+    bool _conversionStarted = false;       // Flag: measurement in progress
+    bool _debug = false;                   // Flag: debug enabled
 
-    void findDevices();   // Поиск датчиков на шине
-    void startConversion(); // Запуск измерения температуры
+    void findDevices();   // Search for sensors on the bus
+    void startConversion(); // Start temperature measurement
 };
 
 #endif
