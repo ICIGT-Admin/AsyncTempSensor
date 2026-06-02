@@ -1,21 +1,25 @@
 #include <AsyncTempSensor.h>
 
-// Callback-функция
-void onTemperatureReady(int index, float temperature) {
-    Serial.print("🌡 Температура от датчика ");
-    Serial.print(index);
-    Serial.print(": ");
-    Serial.println(temperature);
+AsyncTempSensor sensor(2);
+void myTempCallback(DeviceAddress address, float temp) {
+    // Print the address
+    Serial.print("Sensor: ");
+    for (int i = 0; i < 8; i++) {
+        if (address[i] < 16) Serial.print("0");
+        Serial.print(address[i], HEX);
+        if (i < 7) Serial.print(":");
+    }
+    
+    Serial.print(" | Temperature: ");
+    Serial.println(temp);
 }
 
-// Инициализация датчика
-AsyncTempSensor tempSensor(2, onTemperatureReady);
-
 void setup() {
-    Serial.begin(9600);
-    tempSensor.begin(); // Начать работу
+    Serial.begin(115200);
+    AsyncTempSensor sensor(2, myTempCallback);
+    sensor.begin();
 }
 
 void loop() {
-    tempSensor.update(1000); // Обновлять каждые 1000 мс
+    sensor.update(1000); // Update every second
 }
